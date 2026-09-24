@@ -16,9 +16,13 @@ if (!apiKey || !voiceId) {
 const elevenlabs = new ElevenLabsClient({ apiKey });
 
 function getFolderNameFromScript(rawScript) {
-  const cleaned = rawScript.replace(/\[[^\]]*\]/g, "").replace(/[^a-zA-Z0-9]/g, "");
-  const first3 = cleaned.slice(0, 3);
-  return first3.length > 0 ? first3 : "audio_output";
+  const cleaned = rawScript
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .trim();
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const first3Words = words.slice(0, 3).join("_").toLowerCase();
+  return first3Words.length > 0 ? first3Words : "audio_output";
 }
 
 async function run() {
@@ -45,6 +49,10 @@ async function run() {
   console.log(`Script prefix detected: "${folderName}"`);
   console.log(`Saving audio files to directory: output/${folderName}/`);
   console.log(`Found ${lines.length} lines. Starting generation with ElevenLabs...\n`);
+  const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_v3";
+
+  let hadError = false;
+
   for (let i = 0; i < lines.length; i++) {
     const fileNumber = i + 1;
     const text = lines[i];
@@ -54,8 +62,14 @@ async function run() {
     try {
       const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
         text: text,
-        model_id: "eleven_v3",
-        output_format: "mp3_44100_128"
+        modelId: modelId,
+        outputFormat: "mp3_44100_128",
+        voiceSettings: {
+          stability: 0.35,
+          similarityBoost: 0.75,
+          style: 0.0,
+          useSpeakerBoost: true
+        }
       });
       const chunks = [];
       for await (const chunk of audioStream) {
@@ -65,10 +79,42 @@ async function run() {
       fs.writeFileSync(destination, Buffer.concat(chunks));
       console.log(`Saved: output/${folderName}/${fileNumber}.mp3\n`);
     } catch (err) {
-      console.error(`Failed to generate audio for line ${fileNumber}:`, err);
+      hadError = true;
+      let errorDetails = "";
+      if (err?.body && typeof err.body.getReader === "function") {
+        try {
+          const reader = err.body.getReader();
+          const decoder = new TextDecoder();
+          let done = false;
+          while (!done) {
+            const chunk = await reader.read();
+            done = chunk.done;
+            if (chunk.value) errorDetails += decoder.decode(chunk.value);
+          }
+        } catch (_) {}
+      } else if (err?.body && typeof err.body === "object") {
+        try {
+          errorDetails = JSON.stringify(err.body, null, 2);
+        } catch (_) {}
+      }
+
+      console.error(`\nFailed to generate audio for line ${fileNumber}:`);
+      console.error(`- Status code: ${err?.statusCode || err?.status}`);
+      console.error(`- Message: ${err?.message}`);
+      if (errorDetails) {
+        console.error(`- Response body: ${errorDetails}`);
+      }
+      console.error(`\nStack trace:\n${err?.stack || err}`);
+      console.error("\nStopping generation due to error.");
+      break;
     }
   }
-  console.log(`All audio files generated and saved to output/${folderName}/ successfully.`);
+
+  if (!hadError) {
+    console.log(`All audio files generated and saved to output/${folderName}/ successfully.`);
+  } else {
+    process.exit(1);
+  }
 }
 
 await run();
