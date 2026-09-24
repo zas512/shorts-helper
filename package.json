@@ -1,0 +1,13 @@
+{
+  "name": "elevenlabs-voice-gen",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "generate.js",
+  "scripts": {
+    "start": "node generate.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "elevenlabs": "^1.59.0"
+  }
+}
