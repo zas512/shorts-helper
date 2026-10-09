@@ -6,7 +6,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm"}
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac"}
 SCENE_COUNT = 5
@@ -114,14 +113,18 @@ def make_ass(transcript, duration):
 
 
 def escape_filter_path(path):
-    return str(path.resolve()).replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
+    return (
+        str(path.resolve()).replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
+    )
 
 
 def assemble(args):
     ffmpeg = shutil.which("ffmpeg")
     ffprobe = shutil.which("ffprobe")
     if not ffmpeg or not ffprobe:
-        raise RuntimeError("FFmpeg and ffprobe must both be installed and available on PATH")
+        raise RuntimeError(
+            "FFmpeg and ffprobe must both be installed and available on PATH"
+        )
 
     video_dir = args.video_dir.resolve()
     audio_dir = args.audio_dir.resolve()
@@ -131,7 +134,9 @@ def assemble(args):
         raise NotADirectoryError(f"Audio folder not found: {audio_dir}")
 
     transcript_lines = [
-        line.strip() for line in args.transcript.read_text(encoding="utf-8").splitlines() if line.strip()
+        line.strip()
+        for line in args.transcript.read_text(encoding="utf-8").splitlines()
+        if line.strip()
     ]
     if len(transcript_lines) != SCENE_COUNT:
         raise ValueError(
@@ -234,7 +239,13 @@ def main():
 
     try:
         assemble(args)
-    except (FileNotFoundError, NotADirectoryError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+    except (
+        FileNotFoundError,
+        NotADirectoryError,
+        ValueError,
+        RuntimeError,
+        subprocess.CalledProcessError,
+    ) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0

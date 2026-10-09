@@ -1,0 +1,6 @@
+[project]
+name = "shorts-helper"
+version = "0.1.0"
+description = "Assemble numbered short-video clips, voiceovers, and word-by-word captions"
+requires-python = ">=3.10"
+dependencies = []

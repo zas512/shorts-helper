@@ -2,3 +2,7 @@
 node_modules
 output
 script.txt
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
