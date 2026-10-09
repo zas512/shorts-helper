@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -9,6 +10,17 @@ from pathlib import Path
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm"}
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac"}
 SCENE_COUNT = 5
+
+
+def find_program(name, project_root=None):
+    root = Path(project_root) if project_root else Path(__file__).resolve().parent
+    executable = f"{name}.exe" if os.name == "nt" else name
+    bundled_root = root / ".tools" / "ffmpeg"
+    if bundled_root.is_dir():
+        for candidate in sorted(bundled_root.rglob(executable)):
+            if candidate.is_file() and candidate.parent.name.lower() == "bin":
+                return str(candidate)
+    return shutil.which(name)
 
 
 def run(command, *, cwd=None):
@@ -119,11 +131,12 @@ def escape_filter_path(path):
 
 
 def assemble(args):
-    ffmpeg = shutil.which("ffmpeg")
-    ffprobe = shutil.which("ffprobe")
+    ffmpeg = find_program("ffmpeg")
+    ffprobe = find_program("ffprobe")
     if not ffmpeg or not ffprobe:
         raise RuntimeError(
-            "FFmpeg and ffprobe must both be installed and available on PATH"
+            "FFmpeg tools are missing. Run .\\setup_ffmpeg.ps1 to install them locally, "
+            "or install FFmpeg and ffprobe on PATH."
         )
 
     video_dir = args.video_dir.resolve()

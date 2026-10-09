@@ -5,10 +5,10 @@ This workspace generates voiceover audio with the existing ElevenLabs Node.js to
 ## Requirements
 
 - Python 3.10 or newer
-- FFmpeg and ffprobe on `PATH`; FFmpeg must include libass subtitle support
+- The project-local FFmpeg bundle (installed by `setup_ffmpeg.ps1`)
 - Node.js and an ElevenLabs API key to generate audio with `generate.js`
 
-The Python assembler uses only the standard library. `requirements.txt` is intentionally empty of pip packages.
+The Python assembler uses only the standard library. `requirements.txt` stays empty; FFmpeg is downloaded into the project-local `.tools/` folder, not installed system-wide.
 
 ## Python Setup
 
@@ -21,6 +21,14 @@ python -m pip install -r requirements.txt
 ```
 
 If the `py` launcher is unavailable, use the path to your installed Python executable in the first command. VS Code is configured to use `.venv` automatically.
+
+Install the video tools into this project:
+
+```powershell
+.\setup_ffmpeg.ps1
+```
+
+The setup script verifies the downloaded archive checksum. The bundled FFmpeg build includes subtitle support required for captions.
 
 ## Prepare Media
 

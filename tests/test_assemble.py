@@ -1,6 +1,9 @@
+import os
+import tempfile
 import unittest
+from pathlib import Path
 
-from assemble import ass_timestamp, caption_words, make_ass
+from assemble import ass_timestamp, caption_words, find_program, make_ass
 
 
 class CaptionTests(unittest.TestCase):
@@ -17,6 +20,18 @@ class CaptionTests(unittest.TestCase):
         ]
 
         self.assertEqual([line.rsplit(",", 1)[-1] for line in dialogue_lines], ["One", "word."])
+
+    def test_find_program_prefers_project_bundle(self):
+        executable = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            bundled_bin = Path(temporary_directory) / ".tools" / "ffmpeg" / "release" / "bin"
+            bundled_bin.mkdir(parents=True)
+            bundled_executable = bundled_bin / executable
+            bundled_executable.touch()
+
+            self.assertEqual(
+                find_program("ffmpeg", temporary_directory), str(bundled_executable)
+            )
 
 
 if __name__ == "__main__":
